@@ -1,13 +1,57 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dyad-generated-app</title>
-  </head>
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Hircus Caps</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="./node_modules/CSInterface.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Hircus Caps</h1>
+      <p>Generate captions for your videos</p>
+    </header>
 
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+    <main>
+      <div class="section">
+        <label for="language">Language</label>
+        <select id="language">
+          <option value="en">English</option>
+          <option value="ml">Malayalam (മലയാളം)</option>
+          <option value="ml-en">Manglish (Malayalam in English letters)</option>
+        </select>
+      </div>
+
+      <div class="section">
+        <button id="exportAudioBtn" class="btn primary">Export Audio</button>
+        <button id="generateCaptionsBtn" class="btn secondary" disabled>Generate Captions</button>
+      </div>
+
+      <div class="section">
+        <div class="status-container">
+          <div class="status-indicator">
+            <span id="statusText">Idle</span>
+            <div id="statusIndicator" class="indicator idle"></div>
+          </div>
+          <div id="progressBar" class="progress-bar hidden">
+            <div id="progressFill" class="progress-fill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="resultContainer" class="section hidden">
+        <h3>Captions Generated</h3>
+        <div id="captionsPreview"></div>
+        <button id="applyCaptionsBtn" class="btn primary">Apply to Composition</button>
+      </div>
+    </main>
+
+    <footer>
+      <p>Made for creators ❤️</p>
+    </footer>
+  </div>
+
+  <script src="main.js"></script>
+</body>
 </html>

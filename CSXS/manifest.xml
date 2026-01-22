@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExtensionManifest Version="8.0" ExtensionBundleId="com.hircus.caps" ExtensionBundleVersion="1.0.0"
+  ExtensionBundleName="Hircus Caps" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <ExtensionList>
+    <Extension Id="com.hircus.caps.panel" Version="1.0.0" />
+  </ExtensionList>
+  <ExecutionEnvironment>
+    <HostList>
+      <Host Name="AEFT" Version="[18.0,99.9]" />
+    </HostList>
+    <LocaleList>
+      <Locale Code="All" />
+    </LocaleList>
+    <RequiredRuntimeList>
+      <RequiredRuntime Name="CSXS" Version="12.0" />
+    </RequiredRuntimeList>
+  </ExecutionEnvironment>
+  <DispatchInfoList>
+    <Extension Id="com.hircus.caps.panel">
+      <DispatchInfo>
+        <Resources>
+          <MainPath>./index.html</MainPath>
+          <ScriptPath>./jsx/host.jsx</ScriptPath>
+          <CEFCommandLine>
+            <Parameter>--enable-nodejs</Parameter>
+            <Parameter>--mixed-context</Parameter>
+          </CEFCommandLine>
+        </Resources>
+        <Lifecycle>
+          <AutoVisible>true</AutoVisible>
+        </Lifecycle>
+        <UI>
+          <Type>Panel</Type>
+          <Menu>Hircus Caps</Menu>
+          <Geometry>
+            <Size>
+              <Width>350</Width>
+              <Height>450</Height>
+            </Size>
+          </Geometry>
+          <Icons>
+            <Icon Type="Normal">./icons/icon-light.png</Icon>
+            <Icon Type="Dark">./icons/icon-dark.png</Icon>
+          </Icons>
+        </UI>
+      </DispatchInfo>
+    </Extension>
+  </DispatchInfoList>
+</ExtensionManifest>
