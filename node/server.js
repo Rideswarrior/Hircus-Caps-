@@ -10,7 +10,7 @@ const PORT = 3000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '50mb' }));
 
 // Serve static files from the public directory
 app.use(express.static('public'));
@@ -31,7 +31,10 @@ app.post('/generate-captions', (req, res) => {
       return res.status(400).json({ error: 'Audio path is required' });
     }
     
-    if (!fs.existsSync(audioPath)) {
+    // Normalize the path (handle Windows paths)
+    const normalizedPath = audioPath.replace(/"/g, '');
+    
+    if (!fs.existsSync(normalizedPath)) {
       return res.status(400).json({ error: 'Audio file not found' });
     }
     
@@ -43,21 +46,43 @@ app.post('/generate-captions', (req, res) => {
     
     // Check if Whisper executable exists
     if (!fs.existsSync(whisperPath)) {
+      console.log('Whisper.cpp not found at:', whisperPath);
       return res.status(500).json({ 
         error: 'Whisper.cpp not found. Please install Whisper.cpp in the node/whisper.cpp directory' 
       });
     }
     
     // Output file path for captions
-    const outputBase = path.join(__dirname, 'temp', `captions_${Date.now()}`);
+    const timestamp = Date.now();
+    const outputBase = path.join(__dirname, 'temp', `captions_${timestamp}`);
     const outputSrt = `${outputBase}.srt`;
     
+    // Model path - try different common paths
+    let modelPath = path.join(__dirname, 'whisper.cpp', 'models', 'ggml-base.en.bin');
+    
+    // Try alternative model paths
+    const modelPaths = [
+      path.join(__dirname, 'whisper.cpp', 'models', 'ggml-base.bin'),
+      path.join(__dirname, 'whisper.cpp', 'models', 'ggml-tiny.bin'),
+      path.join(__dirname, 'whisper.cpp', 'models', 'ggml-small.en.bin')
+    ];
+    
+    for (const path of modelPaths) {
+      if (fs.existsSync(path)) {
+        modelPath = path;
+        break;
+      }
+    }
+    
+    if (!fs.existsSync(modelPath)) {
+      console.log('Model not found at:', modelPath);
+      return res.status(500).json({ 
+        error: 'Whisper model not found. Please download a model to node/whisper.cpp/models/' 
+      });
+    }
+    
     // Whisper command with parameters
-    // Using params optimized for caption generation:
-    // -otxt: output text only
-    // -olrc: output in LRC format (easier to parse)
-    // -l: language
-    const command = `"${whisperPath}" -m "${path.join(__dirname, 'whisper.cpp', 'models', 'ggml-base.en.bin')}" -f "${audioPath}" -l ${whisperLanguage} -osrt -of "${outputBase}" --output-txt`;
+    const command = `"${whisperPath}" -m "${modelPath}" -f "${normalizedPath}" -l ${whisperLanguage} -osrt -of "${outputBase}" --output-txt`;
     
     console.log('Executing Whisper command:', command);
     
@@ -69,6 +94,9 @@ app.post('/generate-captions', (req, res) => {
           error: `Whisper processing failed: ${error.message}` 
         });
       }
+      
+      console.log('Whisper stdout:', stdout);
+      console.log('Whisper stderr:', stderr);
       
       // Check if output files were created
       if (!fs.existsSync(outputSrt)) {
@@ -143,7 +171,7 @@ app.get('/health', (req, res) => {
 });
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, 'localhost', () => {
   console.log(`Hircus Caps server running on http://localhost:${PORT}`);
   
   // Create temp directory if it doesn't exist

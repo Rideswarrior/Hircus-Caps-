@@ -8,13 +8,17 @@ function exportActiveCompAudio() {
     var activeItem = app.project.activeItem;
     
     if (!activeItem || !(activeItem instanceof CompItem)) {
-      alert("Please select a composition");
-      return null;
+      return "Error: Please select a composition";
     }
     
     // Create a temporary folder for audio export
     var tempFolder = Folder.temp;
     var audioFile = new File(tempFolder.absoluteURI + "/hircus_audio.wav");
+    
+    // Remove existing file if it exists
+    if (audioFile.exists) {
+      audioFile.remove();
+    }
     
     // Set render settings for audio only
     var renderQueue = app.project.renderQueue;
@@ -26,7 +30,6 @@ function exportActiveCompAudio() {
     outputModule.file = audioFile;
     
     // Set format options for WAV
-    var formatOptions = new ImportOptions();
     outputModule.setSetting("Audio Output", "Mono");
     outputModule.setSetting("Channels", "Mono");
     outputModule.setSetting("Sample Rate", "48000");
@@ -41,8 +44,7 @@ function exportActiveCompAudio() {
     // Return the file path
     return audioFile.fsName;
   } catch (error) {
-    alert("Error exporting audio: " + error.toString());
-    return null;
+    return "Error: " + error.toString();
   }
 }
 
@@ -56,13 +58,15 @@ function createCaptionLayers(captionsJSON) {
     var activeComp = app.project.activeItem;
     
     if (!activeComp || !(activeComp instanceof CompItem)) {
-      alert("Please select a composition");
-      return "Error";
+      return "Error: Please select a composition";
     }
     
     // Create a null layer to hold captions
     var captionNull = activeComp.layers.addNull();
     captionNull.name = "Hircus Captions";
+    
+    // Position the null at the bottom center
+    captionNull.property("Position").setValue([activeComp.width/2, activeComp.height - 100]);
     
     // Create text layers for each caption
     for (var i = 0; i < captions.length; i++) {
@@ -75,7 +79,7 @@ function createCaptionLayers(captionsJSON) {
       // Set the parent to the caption null
       textLayer.parent = captionNull;
       
-      // Position the text layer (centered at bottom)
+      // Style the text
       var textProp = textLayer.property("Source Text");
       var textDocument = textProp.value;
       textDocument.fontSize = 48;
@@ -85,12 +89,11 @@ function createCaptionLayers(captionsJSON) {
       textDocument.strokeOverFill = true;
       textDocument.applyFill = true;
       textDocument.applyStroke = true;
+      textDocument.justification = ParagraphJustification.CENTER_JUSTIFY;
       textProp.setValue(textDocument);
       
-      // Center the text horizontally
-      var layerWidth = textLayer.sourceRectAtTime(0, false).width;
-      var compWidth = activeComp.width;
-      textLayer.property("Position").setValue([compWidth/2, activeComp.height - 100]);
+      // Position relative to parent
+      textLayer.property("Position").setValue([0, 0]);
       
       // Set in/out points based on timestamps
       var startTime = caption.start;
@@ -109,8 +112,7 @@ function createCaptionLayers(captionsJSON) {
     
     return "Success";
   } catch (error) {
-    alert("Error creating caption layers: " + error.toString());
-    return "Error";
+    return "Error: " + error.toString();
   }
 }
 
