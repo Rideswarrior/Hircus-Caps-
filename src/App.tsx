@@ -9,6 +9,7 @@ import CaptionGenerator from "./pages/CaptionGenerator";
 import Documentation from "./pages/Documentation";
 import Settings from "./pages/Settings";
 import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </main>
+          <Footer />
         </div>
       </BrowserRouter>
     </TooltipProvider>

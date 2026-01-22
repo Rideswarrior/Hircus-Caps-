@@ -10,6 +10,15 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Play, Pause, Square, Upload, Download, Mic, MicOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  formatTime,
+  generateSrtContent,
+  generateVttContent,
+  generateTxtContent,
+  downloadFile,
+  validateAudioFile,
+  getFileSize
+} from "@/utils/caption-utils";
 
 const CaptionGenerator = () => {
   const { toast } = useToast();
@@ -22,6 +31,7 @@ const CaptionGenerator = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const [transcript, setTranscript] = useState('');
+  const [exportFormat, setExportFormat] = useState('srt');
   const audioRef = useRef<HTMLAudioElement>(null);
   const recognitionRef = useRef<any>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -31,13 +41,13 @@ const CaptionGenerator = () => {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-      
+
       if (SpeechRecognition) {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
         recognition.lang = language;
-        
+
         recognition.onresult = (event: any) => {
           let interimTranscript = '';
           for (let i = event.resultIndex; i < event.results.length; i++) {
@@ -56,25 +66,25 @@ const CaptionGenerator = () => {
           }
           setTranscript(interimTranscript);
         };
-        
+
         recognition.onerror = (event: any) => {
           console.error('Speech recognition error', event.error);
           setStatus('Speech recognition error: ' + event.error);
           setIsRecording(false);
         };
-        
+
         recognition.onend = () => {
           if (isRecording) {
             recognition.start();
           }
         };
-        
+
         recognitionRef.current = recognition;
       } else {
         console.warn('Speech Recognition not supported in this browser');
       }
     }
-    
+
     return () => {
       if (recognitionRef.current) {
         recognitionRef.current.stop();
@@ -85,16 +95,16 @@ const CaptionGenerator = () => {
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type.startsWith('audio/')) {
+      if (validateAudioFile(file)) {
         setAudioFile(file);
         toast({
           title: "Audio file loaded",
-          description: `Loaded: ${file.name}`,
+          description: `Loaded: ${file.name} (${getFileSize(file)})`,
         });
       } else {
         toast({
           title: "Invalid file type",
-          description: "Please upload an audio file",
+          description: "Please upload a valid audio file (WAV, MP3, OGG, WEBM)",
           variant: "destructive",
         });
       }
@@ -114,31 +124,31 @@ const CaptionGenerator = () => {
     try {
       // Request microphone access
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      
+
       // Create media recorder for saving audio
       const mediaRecorder = new MediaRecorder(stream);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
-      
+
       mediaRecorder.ondataavailable = (event) => {
         audioChunksRef.current.push(event.data);
       };
-      
+
       mediaRecorder.onstop = () => {
         const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/wav' });
         const audioFile = new File([audioBlob], 'recorded_audio.wav', { type: 'audio/wav' });
         setAudioFile(audioFile);
       };
-      
+
       mediaRecorder.start();
-      
+
       // Start speech recognition
       recognitionRef.current.lang = language;
       recognitionRef.current.start();
-      
+
       setIsRecording(true);
       setStatus('Listening...');
-      
+
       toast({
         title: "Recording Started",
         description: "Speak now...",
@@ -157,14 +167,14 @@ const CaptionGenerator = () => {
     if (recognitionRef.current) {
       recognitionRef.current.stop();
     }
-    
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
-      
+
       // Stop all media tracks
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
-    
+
     setIsRecording(false);
     setStatus('Recording stopped');
   };
@@ -188,15 +198,15 @@ const CaptionGenerator = () => {
       // Simulate processing steps
       setProgress(20);
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       setStatus('Analyzing speech...');
       setProgress(50);
       await new Promise(resolve => setTimeout(resolve, 1200));
-      
+
       setStatus('Generating captions...');
       setProgress(80);
       await new Promise(resolve => setTimeout(resolve, 800));
-      
+
       // Generate sample captions based on language
       let sampleCaptions = [];
       if (language.startsWith('ml')) {
@@ -216,11 +226,11 @@ const CaptionGenerator = () => {
           { start: 16, end: 20, text: "Thank you for watching our tutorial." }
         ];
       }
-      
+
       setCaptions(sampleCaptions);
       setStatus('Captions generated successfully');
       setProgress(100);
-      
+
       toast({
         title: "Success",
         description: "Captions generated successfully!",
@@ -235,12 +245,6 @@ const CaptionGenerator = () => {
     } finally {
       setIsProcessing(false);
     }
-  };
-
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = Math.floor(seconds % 60);
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
   const playAudio = () => {
@@ -265,7 +269,7 @@ const CaptionGenerator = () => {
     }
   };
 
-  const downloadCaptions = () => {
+  const handleDownload = () => {
     if (captions.length === 0) {
       toast({
         title: "No captions",
@@ -275,28 +279,33 @@ const CaptionGenerator = () => {
       return;
     }
 
-    // Create SRT content
-    let srtContent = '';
-    captions.forEach((caption, index) => {
-      srtContent += `${index + 1}\n`;
-      srtContent += `${formatTime(caption.start)},000 --> ${formatTime(caption.end)},000\n`;
-      srtContent += `${caption.text}\n\n`;
-    });
+    let content = '';
+    let filename = 'captions';
+    let mimeType = 'text/plain';
 
-    // Create and download file
-    const blob = new Blob([srtContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'captions.srt';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    switch (exportFormat) {
+      case 'srt':
+        content = generateSrtContent(captions);
+        filename += '.srt';
+        mimeType = 'text/plain';
+        break;
+      case 'vtt':
+        content = generateVttContent(captions);
+        filename += '.vtt';
+        mimeType = 'text/vtt';
+        break;
+      case 'txt':
+        content = generateTxtContent(captions);
+        filename += '.txt';
+        mimeType = 'text/plain';
+        break;
+    }
+
+    downloadFile(content, filename, mimeType);
 
     toast({
       title: "Download started",
-      description: "Captions downloaded as SRT file",
+      description: `Captions downloaded as ${exportFormat.toUpperCase()} file`,
     });
   };
 
@@ -384,26 +393,26 @@ const CaptionGenerator = () => {
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium">Audio Preview</span>
                     <Badge variant="secondary">
-                      {Math.round(audioFile.size / 1024)} KB
+                      {getFileSize(audioFile)}
                     </Badge>
                   </div>
-                  <audio 
-                    ref={audioRef} 
-                    src={URL.createObjectURL(audioFile)} 
+                  <audio
+                    ref={audioRef}
+                    src={URL.createObjectURL(audioFile)}
                     onEnded={() => setIsPlaying(false)}
                     className="w-full"
                     controls
                   />
                   <div className="flex space-x-2">
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={isPlaying ? pauseAudio : playAudio}
                       disabled={!audioFile}
                     >
                       {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
                     </Button>
-                    <Button 
-                      size="sm" 
+                    <Button
+                      size="sm"
                       onClick={stopAudio}
                       disabled={!audioFile}
                     >
@@ -435,14 +444,31 @@ const CaptionGenerator = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Generated Captions</h3>
-                <Button 
-                  onClick={downloadCaptions}
-                  disabled={captions.length === 0}
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Download SRT
-                </Button>
+                <div className="flex space-x-2">
+                  <div className="w-24">
+                    <Select
+                      value={exportFormat}
+                      onValueChange={setExportFormat}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="srt">SRT</SelectItem>
+                        <SelectItem value="vtt">VTT</SelectItem>
+                        <SelectItem value="txt">TXT</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={handleDownload}
+                    disabled={captions.length === 0}
+                    size="sm"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    Download
+                  </Button>
+                </div>
               </div>
 
               <div className="border rounded-lg p-4 h-80 overflow-y-auto">
@@ -457,8 +483,8 @@ const CaptionGenerator = () => {
                 ) : (
                   <div className="space-y-4">
                     {captions.map((caption, index) => (
-                      <div 
-                        key={index} 
+                      <div
+                        key={index}
                         className="p-3 rounded-lg border bg-muted hover:bg-accent transition-colors"
                       >
                         <div className="flex justify-between text-sm text-muted-foreground mb-1">
