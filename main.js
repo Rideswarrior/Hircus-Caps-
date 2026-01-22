@@ -3,7 +3,7 @@
   'use strict';
 
   // Initialize CSInterface
-  const cs = new CSInterface();
+  let cs;
   
   // DOM Elements
   const elements = {
@@ -23,8 +23,11 @@
   let audioFilePath = null;
   let captionsData = null;
 
-  // Initialize
+  // Initialize when CSInterface is ready
   function init() {
+    // Initialize CSInterface
+    cs = new CSInterface();
+    
     // Add event listeners
     elements.exportAudioBtn.addEventListener('click', exportAudio);
     elements.generateCaptionsBtn.addEventListener('click', generateCaptions);
