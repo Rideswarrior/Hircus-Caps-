@@ -3,7 +3,7 @@ import { MadeWithDyad } from "@/components/made-with-dyad";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "react-router-dom";
-import { Mic, FileText, Download } from "lucide-react";
+import { Mic, FileText, Download, Globe } from "lucide-react";
 
 const Index = () => {
   return (
@@ -36,11 +36,11 @@ const Index = () => {
                 </div>
               </div>
               <CardTitle>Audio Processing</CardTitle>
-              <CardDescription>Upload any audio file</CardDescription>
+              <CardDescription>Upload or record audio</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-gray-600">
-                Our system processes your audio files to extract speech and generate accurate captions.
+                Our system processes your audio files or live recordings to extract speech and generate accurate captions.
               </p>
             </CardContent>
           </Card>
@@ -80,15 +80,15 @@ const Index = () => {
           </Card>
         </div>
 
-        <div className="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg p-8 max-w-4xl mx-auto mb-16">
           <h2 className="text-2xl font-bold text-center mb-6">How It Works</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div className="text-center">
               <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-3">
                 1
               </div>
-              <h3 className="font-semibold mb-2">Upload Audio</h3>
-              <p className="text-sm text-gray-600">Upload your video's audio file</p>
+              <h3 className="font-semibold mb-2">Upload or Record</h3>
+              <p className="text-sm text-gray-600">Upload an audio file or record directly</p>
             </div>
             <div className="text-center">
               <div className="bg-blue-500 text-white rounded-full w-10 h-10 flex items-center justify-center mx-auto mb-3">
@@ -110,6 +110,29 @@ const Index = () => {
               </div>
               <h3 className="font-semibold mb-2">Download</h3>
               <p className="text-sm text-gray-600">Export in your preferred format</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg p-8 max-w-4xl mx-auto text-white">
+          <div className="flex flex-col md:flex-row items-center">
+            <div className="md:w-2/3 mb-6 md:mb-0 md:pr-6">
+              <h2 className="text-2xl font-bold mb-4">Browser-Based Caption Generation</h2>
+              <p className="mb-4">
+                Our tool runs entirely in your browser using the Web Speech API, ensuring your audio files never leave your computer.
+                No uploads to external servers required!
+              </p>
+              <div className="flex items-center">
+                <Globe className="mr-2" />
+                <span>100% Client-side processing</span>
+              </div>
+            </div>
+            <div className="md:w-1/3">
+              <Button asChild variant="secondary" className="w-full">
+                <Link to="/caption-generator">
+                  Try It Now
+                </Link>
+              </Button>
             </div>
           </div>
         </div>
