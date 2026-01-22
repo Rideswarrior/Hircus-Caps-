@@ -25,6 +25,13 @@
 
   // Initialize when CSInterface is ready
   function init() {
+    // Check if CSInterface is available
+    if (typeof CSInterface === 'undefined') {
+      console.log('CSInterface not yet available, retrying in 100ms...');
+      setTimeout(init, 100);
+      return;
+    }
+    
     // Initialize CSInterface
     cs = new CSInterface();
     
@@ -36,7 +43,7 @@
     // Set initial status
     updateStatus('Idle', 'idle');
     
-    console.log('Hircus Caps initialized');
+    console.log('Hircus Caps initialized with CSInterface');
   }
 
   // Update status indicator
